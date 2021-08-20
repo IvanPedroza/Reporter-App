@@ -105,8 +105,7 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
             let body = myDocument.MainDocumentPart.Document.Body
                
             //Reads in Word Doc, makes virtual copy and starts processing
-            let rqstform = "C:/Users/ipedroza/source/repos/FRM-M0207 Reporter Probe Synthesis Request.docx"
-            let docArray = File.ReadAllBytes(rqstform)
+            let docArray = File.ReadAllBytes(requestForm)
             use copyDoc = new MemoryStream(docArray)
             use myDocument = WordprocessingDocument.Open(copyDoc, true)
                
@@ -156,7 +155,7 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
             (dropdownCells body 2).Text <- formattedShip
 
             //Saves filled out Doc
-            myDocument.SaveAs("C:\\Users\\" + user + "\\AppData\\Local\\Temp\\ "+param + " Request Form" + ".docx") |> ignore
+            myDocument.SaveAs($"C:\\Users\\{user}\\AppData\\Local\\Temp\\{param} Request Form" + ".docx") |> ignore
 
 
 

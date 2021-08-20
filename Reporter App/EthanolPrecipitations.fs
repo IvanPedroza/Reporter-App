@@ -65,8 +65,7 @@ let precipitationStart (inputParams : string list) (precipitationForm : string) 
             let body = myDocument.MainDocumentPart.Document.Body
                
             //Reads in Word Doc, makes virtual copy and starts processing
-            let rqstform = "C:/Users/ipedroza/source/repos/FRM-M0207 Reporter Probe Synthesis Request.docx"
-            let docArray = File.ReadAllBytes(rqstform)
+            let docArray = File.ReadAllBytes(rqstForm)
             use copyDoc = new MemoryStream(docArray)
             use myDocument = WordprocessingDocument.Open(copyDoc, true)
                

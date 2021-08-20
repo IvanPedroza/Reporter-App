@@ -63,8 +63,7 @@ let zagStart (inputParams : string list) (zagForm : string) (reporter : ExcelWor
        
 
            //Reads in Word Doc, creates memory stream and starts processing
-           let rpZAG = "C:/Users/ipedroza/source/repos/FRM-10498-02_RP Ligation QC Using CE.docx"
-           let docArray = File.ReadAllBytes(rpZAG)
+           let docArray = File.ReadAllBytes(zagForm)
            use docCopy = new MemoryStream(docArray)
            use myDocument = WordprocessingDocument.Open (docCopy, true)
            let body = myDocument.MainDocumentPart.Document.Body
