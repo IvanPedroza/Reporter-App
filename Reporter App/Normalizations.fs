@@ -10,21 +10,20 @@ open System.Linq
 open System.IO
 open NormalizationHelpers
 
-
+// Function used to fill out normalization Batch Record
 let normalizationStart (inputParams : string list) (normalizationForm : string) (normPrecipitationForm : string) (reporter : ExcelWorksheet) (myTools : ExcelWorksheet) =
-    
+    // Gets logged user for path and error logging
     let user = Environment.UserName
 
+    // User interface
     Console.WriteLine "Which bench space are you using?"
     let benchInput = Console.ReadLine ()
+    let reagentsInput = "normalizations"
 
-
-    //Reading in reagents excel book
-    //Console.WriteLine "Which reagents are you using?"
-    let reagentsInput = "normalizations" //Console.ReadLine ()
-
-
+    // Cycles through lots specifed by user and fills out a Batch Record for each
     for param in inputParams do 
+
+        // Reads in ID info for reagents and equipment from LIMS
         let pipetteCalibration = listFunction benchInput myTools 2
         let p1000 = listFunction benchInput myTools 3
         let p1000Id = listFunction benchInput myTools 4
@@ -44,8 +43,6 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
         let mc12P20Id = listFunction benchInput myTools 22
         let mc8P200Id = listFunction benchInput myTools 20
         let mc12P200Id = listFunction benchInput myTools 24
-
-
         let waterLot = listFunction reagentsInput myTools 2
         let waterExp = listFunction reagentsInput myTools 3
         let waterUbd = listFunction reagentsInput myTools 4
@@ -64,8 +61,7 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
         let ethanolUBD = listFunction reagentsInput myTools 17
 
 
-      
-    
+        // Reads in blank Batch Record form
         let readExcelBytes = File.ReadAllBytes(normalizationForm)
         let excelStream = new MemoryStream(readExcelBytes)
         let formPackage = new ExcelPackage(excelStream)
@@ -73,18 +69,14 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
         let preIncSheet = formPackage.Workbook.Worksheets.["Pre-incubation"]
     
 
-        //Takes value of each cell of the row in which the input lies and stores it for use in filling out Word Doc
+        // Takes value of each cell of the row in which the input lies and stores it for use in filling out Word Doc
         let lot = listFunction param reporter 1 
         let csName = listFunction param reporter 2 
         let geneNumber = listFunction param reporter 5  |> float
         let scale = listFunction param reporter 6  |> float
-       
-
-
         normSheet.Cells.[7, 3].Value <- lot + " " + csName
         normSheet.Cells.[7, 6].Value <- geneNumber
         normSheet.Cells.[7, 8].Value <- scale
-
         normSheet.Cells.[10, 4].Value <- waterLot
         normSheet.Cells.[10, 7].Value <- waterExp
         normSheet.Cells.[11, 7].Value <- "Use by date: " + waterUbd
@@ -108,15 +100,11 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
         normSheet.Cells.[23, 7].Value <- pipetteCalibration
         normSheet.Cells.[24, 4].Value <- p1000Id
         normSheet.Cells.[24, 7].Value <- pipetteCalibration
-
-
         preIncSheet.Cells.[6, 3].Value <- lot + " " + csName
         preIncSheet.Cells.[6, 6].Value <- geneNumber
         preIncSheet.Cells.[6, 8].Value <- scale
-
         preIncSheet.Cells.[9, 4].Value <- nanodrop
         preIncSheet.Cells.[9, 7].Value <- nanodropCal
-
         preIncSheet.Cells.[12, 4].Value <- p2Id
         preIncSheet.Cells.[12, 7].Value <- pipetteCalibration
         preIncSheet.Cells.[13, 4].Value <- p10Id
@@ -130,38 +118,33 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
         preIncSheet.Cells.[17, 4].Value <- p1000Id
         preIncSheet.Cells.[17, 7].Value <- pipetteCalibration
 
-    
+        // Creates dir at specified location in shared drive for lab staff to access files
         Directory.CreateDirectory("W:/Production/Reporter requests/In Progress/" + param + " " + csName)
-
         let path = "W:/Production/Reporter requests/In Progress/" + param + " " + csName + "/" + param + " " + csName + " Normalization" + ".xlsx"
-
         let fileBytes = formPackage.GetAsByteArray()
-
         File.WriteAllBytes(path, fileBytes)
 
     
-        //Reads in Word Doc and starts processing
-
+        // Reads in Word Doc and starts processing
         let memoryStream = new MemoryStream()
         use fileStream = new FileStream(normPrecipitationForm, FileMode.Open, FileAccess.Read)
         fileStream.CopyTo(memoryStream)
         let myDocument = WordprocessingDocument.Open(memoryStream, true)
         let body = myDocument.MainDocumentPart.Document.Body
 
-        //Fills CS indentifying info for pages one and two
+        // Fills CS indentifying info for pages one and two
         (csId body 1 7).Text <- lot + " " + csName
         (csId body 1 14).Text <- geneNumber.ToString()
         (csId body 1 20).Text <- scale.ToString()
         (csId body 6 3).Text <- lot + " " + csName
         (csId body 6 7).Text <- geneNumber.ToString()
         (csId body 6 12).Text <- scale.ToString()  
-        
         (csId body 10 3).Text <- lot + " " + csName
         (csId body 10 8).Text <- geneNumber.ToString()
         (csId body 10 13).Text <- scale.ToString()
    
 
-        //filling out lot numbers
+        // Fills out lot numbers on Batch Record
         (fillCells body 0 1 2 0 0).Text <- lot
         (fillCells body 0 1 3 0 0).Text <- "N/A"
         (fillCells body 0 2 2 0 0).Text <- acetateLot
@@ -175,7 +158,7 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
         (fillCells body 0 6 2 0 0).Text <- pipetteCalibration
         (fillCells body 0 7 2 0 0).Text <- pipetteCalibration
 
-        //gets text in cells which value depends on the scale of the build and the bench where the process will be done
+        // Gets text in cells which value depends on the scale of the build and the bench where the process will be done
         let acetatePipetteSize = (fillCells body 0 6 0 0 0)
         let acetatePipetteId =  (fillCells body 0 6 1 0 0)
         let poolingPipetteSize = (fillCells body 0 7 0 0 0)
@@ -184,11 +167,11 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
         let acetateVolume = (fillCells body 1 4 1 0 5)
         let alcoholVolume = (fillCells body 1 6 1 0 9)
 
-        //Fills out theoretical volume of pooled reporters
+        // Fills out theoretical volume of pooled reporters
         let theoreticalVolume = thereticalVolumes (scale |> float) (geneNumber |> float)
         //(fillCells body 1 4 1 0 2).Text <- theoreticalVolume.ToString()
 
-        //Calculates precipitation and reagent volumes and then assigns eqipment needed for working with those volumes
+        // Calculates precipitation and reagent volumes and then assigns eqipment needed for working with those volumes
         if scale = 0.15 then 
             let volume, acetate, alcohol = calculations 5.1 (geneNumber |> float)
 
@@ -228,7 +211,6 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
             let acetate = System.Math.Ceiling(volume / 9.0)
             let alcohol = System.Math.Ceiling((volume + acetate) * 2.5)
 
-            //(fillCells body 2 2 1 0 2).Text <- volume.ToString()
             acetateVolume.Text <- acetate.ToString()
             alcoholVolume.Text <- alcohol.ToString()
             acetatePipetteSize.Text <- p200
@@ -236,6 +218,7 @@ let normalizationStart (inputParams : string list) (normalizationForm : string) 
             poolingPipetteSize.Text <- mc12P200Id
             poolingPipetteId.Text <- mc12P200Id    
 
+        // Saves document in temp dir for printing before being deleted
         let user = Environment.UserName
         let path = "C:\\users\\" + user + "\\AppData\\Local\\Temp\\ "+param + " Normalization Precipitation Form" + ".docx"
         myDocument.SaveAs(path).Close() |> ignore
