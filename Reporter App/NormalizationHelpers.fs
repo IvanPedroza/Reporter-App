@@ -7,7 +7,7 @@ open DocumentFormat.OpenXml.Wordprocessing
 open System.Linq
 
 
-
+// Function used to get CS header text
 let csId (body : Body) paragraphIndex runIndex =
     let paragraph = body.Elements<Paragraph>().ElementAt(paragraphIndex)
     let run = paragraph.Elements<Run>().ElementAt(runIndex)
@@ -21,7 +21,7 @@ let csId (body : Body) paragraphIndex runIndex =
 
     
 
- //Creates empty list - finds the Excel cell location for input and deconstructs the tuple into row and column numbers
+//Creates empty list - finds the Excel cell location for input and deconstructs the tuple into row and column numbers
 let listFunction (item : string) (sheetName : ExcelWorksheet) columnIndex =
     let list = List.init sheetName.Dimension.End.Row (fun i -> (i+1,1)) 
     let coordinates = List.find (fun (row,col) -> item.Equals((string sheetName.Cells.[row,col].Value).Trim(), StringComparison.InvariantCultureIgnoreCase)) list
