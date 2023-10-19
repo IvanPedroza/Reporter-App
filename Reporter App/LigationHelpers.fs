@@ -8,7 +8,7 @@ open DocumentFormat.OpenXml.Wordprocessing
 open System.Linq
 
 
-
+// Funtion for getting CS name text for manipulation
 let csId (body : Body) paragraphIndex runIndex =
     let paragraph = body.Elements<Paragraph>().ElementAt(paragraphIndex)
     let run = paragraph.Elements<Run>().ElementAt(runIndex)
@@ -20,7 +20,7 @@ let csId (body : Body) paragraphIndex runIndex =
     let text = run.AppendChild<Text>(new Text())
     text
 
-
+// Function to get text from cell types in Batch Record form
 let fillCells (body : Body) tableIndex tableRowIndex tableCellIndex paragraphIndex runIndex underlineIndex = 
     let table = body.Elements<Table>().ElementAt(tableIndex)
     let row = table.Elements<TableRow>().ElementAt(tableRowIndex)
@@ -47,6 +47,7 @@ let fillCells (body : Body) tableIndex tableRowIndex tableCellIndex paragraphInd
             let text = run.AppendChild(new Text())
             text 
 
+// Funtion to get and format text in footnote section of Batch Record
 let footNoteSize (body : Body) tableIndex tableRowIndex tableCellIndex paragraphIndex runIndex = 
     let table = body.Elements<Table>().ElementAt(tableIndex)
     let row = table.Elements<TableRow>().ElementAt(tableRowIndex)
@@ -62,7 +63,7 @@ let footNoteSize (body : Body) tableIndex tableRowIndex tableCellIndex paragraph
     text
     
 
- //Creates empty list - finds the Excel cell location for input and deconstructs the tuple into row and column numbers
+ // Creates empty list - finds the Excel cell location for input and deconstructs the tuple into row and column numbers
 let listFunction (item : string) (sheetName : ExcelWorksheet) columnIndex trimFirstCharacter =
     let list = List.init sheetName.Dimension.End.Row (fun i -> (i+1,1)) 
     if trimFirstCharacter then 
@@ -76,6 +77,7 @@ let listFunction (item : string) (sheetName : ExcelWorksheet) columnIndex trimFi
         let value = sheetName.Cells.[row,columnIndex].Value |> string
         value
 
+// Function to determine the volume of oligos needed for a CS
 let oligoStamp (scale : float) : (string * string* float * float * float * float * string) = 
     match scale with   
         |scale when scale <= 0.5 -> ("6", "3", 1.5, 1.7, 0.55, 0.25, "4")
@@ -91,7 +93,7 @@ let oligoStamp (scale : float) : (string * string* float * float * float * float
         |10.0 -> ("60", "60", 30.0, 34.0, 11.0, 5.0, "80")
         |_ -> failwith "Error..."
 
-
+// Function used to fill out footnotes at specified location in CS Batch Record
 let calNote (body : Body) (inputParams : string list) (param : string) : unit =
     if inputParams.Length > 1 then 
         (footNoteSize body 1 6 1 0 4).Text <- "①"
@@ -115,14 +117,15 @@ let calNote (body : Body) (inputParams : string list) (param : string) : unit =
             let note = "① Calculations are on " + lastLot + "."
             (fillCells body 1 14 0 2 0 0).Text <- note
 
-
+// Function used to calculate reagents needed for chemistry
 let digesting (float) : (string * string * string * string) = 
     let DEPC = (4.75 * float).ToString()
     let neBuffer = float.ToString()
     let cutterMix = (2.0 * float).ToString()
     let pviiEnzyme = (0.25 * float).ToString()
     DEPC, neBuffer, cutterMix, pviiEnzyme
-    
+
+// Function used to add footnotes to Batch Record
 let digestFootnote (body : Body) (inputParams : string list) = 
     if inputParams.Length > 1 then 
         (footNoteSize body 3 5 1 2 2).Text <- "①"
@@ -132,10 +135,10 @@ let digestFootnote (body : Body) (inputParams : string list) =
         (footNoteSize body 3 5 1 10 4).Text <- "①"
         (footNoteSize body 3 5 1 13 2).Text <- "①"
 
-
+// Function used to read the date oligos were added to plate from LIMS
 let oligoStampDateFinder (item : string) (sheetName : ExcelWorksheet) columnIndex =
     try 
-        let list = List.init sheetName.Dimension.End.Row (fun i -> (i+1,2)) //initializes list of lenth of column 2 rows
+        let list = List.init sheetName.Dimension.End.Row (fun i -> (i+1,2))
         let coordinates = List.find (fun (row,col) -> item.Equals ((string sheetName.Cells.[row,col].Value).Trim(), StringComparison.InvariantCultureIgnoreCase)) list
         let row, _colnum = coordinates
         let value = sheetName.Cells.[row,columnIndex].Text |> string
@@ -151,6 +154,6 @@ let oligoStampDateFinder (item : string) (sheetName : ExcelWorksheet) columnInde
             value
 
 
-
+// Utility function to round up
 let roundupbyfive(i) : float = 
     (System.Math.Ceiling(i / 5.0) * 5.0)
