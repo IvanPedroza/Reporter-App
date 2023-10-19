@@ -10,10 +10,11 @@ open System.IO
 open LigationHelpers
 open CoversheetHelpers
 
+// Function used to fillout ligation Batch Records
 let ligationStart (inputParams : string list) (ligationForm : string) (requestForm : string) (reporter : ExcelWorksheet) (oligoStamps : ExcelWorksheet) (myTools : ExcelWorksheet) =
-    
+    // Gets user for use in path and error logging
     let user = Environment.UserName
-
+    // User interface
     Console.WriteLine "Will you be digesting all these lots together today?"
     Console.WriteLine ("Yes or No")
     let digestInput = Console.ReadLine ()
@@ -22,21 +23,15 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
             "Yes"
         else 
             digestInput
-
-
     Console.WriteLine "Which bench space are you using?"
     let benchInput = Console.ReadLine ()
-
-
-    //Reading in reagents excel book
-    //Console.WriteLine "Which reagents are you using?"
-    let reagentsInput = "rpligations"//Console.ReadLine ()
-
-
+    let reagentsInput = "rpligations"
+    
+    // Reads in Batch Record template for manipulation
     let backboneSheet = new FileInfo("W:/Production/DV1/code sets/Arrayed Backbones/In process/Array Tracking.xlsx")
     use backbonePackage = new ExcelPackage (backboneSheet)
     let backbones = backbonePackage.Workbook.Worksheets.["Array Tracking"]
-
+    
     let digestReagents = "digest"
     let mutable ligationReactions = []
     let mutable digestReactions = []
@@ -45,11 +40,11 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
     //Starting point for manipulating sheet info and storing it in "param"
     for param in inputParams do
             
-
+        // Reads in lot numbers from LIMS
         let indexedParam = param.[1..param.Length] |> string
         let backboneLot = listFunction indexedParam backbones 2 true
 
-        //Takes value of each cell of the row in which the input lies and stores it for use in filling out Word Doc
+        // Retrieves IDs for reagents and equipment from LIMS
         let lot = listFunction param reporter 1 false
         let csName = listFunction param reporter 2 false
         let geneNumber = listFunction param reporter 5 false |> float
@@ -59,9 +54,6 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
         let rxnNumber = listFunction param reporter 8 false
         let formulation = listFunction param reporter 9 false
         let ship = listFunction param reporter 10 false
-
-
-        //Same as above but for reagents excel doc
         let RPLLot = listFunction reagentsInput myTools 2 false
         let RPLExpiration = listFunction reagentsInput myTools 3 false
         let T4BufferLot = listFunction reagentsInput myTools 4 false
@@ -73,8 +65,6 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
         let H2Oubd = listFunction reagentsInput myTools 10 false
         let EnzymeLot = listFunction reagentsInput myTools 11 false
         let EnzymeExp = listFunction reagentsInput myTools 12 false
-
-        //Digent lots info 
         let digestBufferLot = listFunction digestReagents myTools 2 false
         let digestBufferExpiration = listFunction digestReagents myTools 3 false
         let cutterLot = listFunction digestReagents myTools 4 false
@@ -82,8 +72,6 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
         let reLot = listFunction digestReagents myTools 6 false
         let reExpiration = listFunction digestReagents myTools 7 false
         let NA = "N/A"
-
-        //Equipment info
         let pipetteCalibration = listFunction benchInput myTools 2 false
         let p1000Id = listFunction benchInput myTools 4 false
         let p200Id = listFunction benchInput myTools 6 false
@@ -96,6 +84,7 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
         let mc12P200Id = listFunction benchInput myTools 20 false
 
 
+        // Fills out Batch Record depending of type and criteria of each build
         if param.EndsWith("RW", StringComparison.InvariantCultureIgnoreCase) then 
             ignore()
         else 
@@ -104,16 +93,14 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
             use myDocument = WordprocessingDocument.Open(_copyDoc, true)
             let body = myDocument.MainDocumentPart.Document.Body
                
-            //Reads in Word Doc, makes virtual copy and starts processing
+            // Reads in template, makes virtual copy and starts processing
             let docArray = File.ReadAllBytes(requestForm)
             use copyDoc = new MemoryStream(docArray)
             use myDocument = WordprocessingDocument.Open(copyDoc, true)
-               
             let body = myDocument.MainDocumentPart.Document.Body
 
             //next block finds the text for library concentration checkboxes
             let concentrationCheck = "☒" //used to replace checked box text
-
             let lessThanSix = (determiningConcentration body 1 1)
             let sixtofourhundred =(determiningConcentration body 1 2)
             let fourhundredplus =  (determiningConcentration body 1 3)
@@ -171,7 +158,7 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
         let lastLotScale = (listFunction lastLot reporter 6 false) |> float
 
 
-
+        // Fills out rework Batch Record if needed
         if param.EndsWith("RW", StringComparison.InvariantCultureIgnoreCase) then
             Console.WriteLine ("How many reworks are you ligationg for " + param)
             let rwNumber = Console.ReadLine ()
@@ -209,8 +196,6 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
                 else 
                     rwOligoAddded.ToString()
                 
-
-
 
             let mmStamp = 
                 let formatedMm = (masterMix |> float)
@@ -253,7 +238,6 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
 
 
         //Creates two lists - a list of total probe number for digest calculations and one of normalized probe number for ligation calculations
-        
         if param.EndsWith ("RW", StringComparison.InvariantCultureIgnoreCase) then
             ignore()
         else
@@ -282,7 +266,7 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
                 ligationReactions <- geneNumber :: ligationReactions
 
         
-
+        // Determines number of plates that make up a CS
         let plateTotal = System.Math.Ceiling(geneNumber / 96.0) |> int
         let iterator = [1..9]
         let mutable naList = []
@@ -315,9 +299,6 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
         (fillCells body 0 7 3 1 2 0).Text <- H2Oubd //changed
         (fillCells body 0 8 2 0 0 0).Text <- EnzymeLot
         (fillCells body 0 8 3 0 0 0).Text <- EnzymeExp
-
-        //set conditional statement to control underlined text
-
         (fillCells body 0 10 1 0 0 0).Text <- naList.[8]
         (fillCells body 0 10 2 0 0 0).Text <- naList.[8]
         (fillCells body 0 11 1 0 1 0).Text <- naList.[7]
@@ -337,6 +318,7 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
         (fillCells body 0 18 1 0 1 0).Text <- naList.[0]
         (fillCells body 0 18 2 0 0 0).Text <- naList.[0]
 
+        // Determine which pipete user should use
         let mcStampPipette = 
                 match scale with 
                 | _ when scale <= 2.5 && geneNumber <= 64.0 -> mc8P20Id //8 chan 20
@@ -346,7 +328,7 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
                 | _ when scale > 3.0 && geneNumber <= 64.0 -> mc12P200Id //8 chan 200
                 | _ when scale > 3.0 && geneNumber > 64.0 -> "12 chan 200"
 
-
+        // Fills out equipment used
         (fillCells body 0 20 0 0 0 0).Text <- mcStampPipette
         (fillCells body 0 21 0 0 0 0).Text <- p1000Id
         (fillCells body 0 22 0 0 0 0).Text <- p200Id
@@ -475,7 +457,7 @@ let ligationStart (inputParams : string list) (ligationForm : string) (requestFo
                     (fillCells body 3 11 0 2 0 0).Text <- note
 
         
-
+        // Saves document to temp folder for printing and then deletion
         let User = Environment.UserName
         let path = "C:/Users/" + User + "//AppData/Local/Temp/ "+param + " Reporter Ligation Batch Record" + ".docx"
         myDocument.SaveAs(path).Close()
