@@ -8,7 +8,7 @@ open DocumentFormat.OpenXml.Wordprocessing
 open System.IO
 open System.Linq
 
-
+// Function used to get the text in Batch Record
 let getLotNumberCellText (body : Body) tableIndex rowIndex cellIndex paragraphIndex =
     let lot = body.Elements<Table>().ElementAt(tableIndex)
     let tableRow = lot.Elements<TableRow>().ElementAt(rowIndex)
@@ -17,7 +17,8 @@ let getLotNumberCellText (body : Body) tableIndex rowIndex cellIndex paragraphIn
     let run = paragraph.AppendChild(new Run())
     let text = run.AppendChild(new Text())
     text
-
+    
+// Function used to get text of calculation sections 
 let getCalculations (body : Body) paragraphIndex runIndex footnoteId=
     let table = body.Elements<Table>().ElementAt(1)
     let tableRow = table.Elements<TableRow>().ElementAt(2)
@@ -34,7 +35,7 @@ let getCalculations (body : Body) paragraphIndex runIndex footnoteId=
         let text = run.AppendChild(new Text())
         text
 
-
+// Function used to get text from CS ID section
 let getCsInfo (body : Body) paragraphIndex runIndex =
     let paragraph = body.Elements<Paragraph>().ElementAt(paragraphIndex)
     let run = paragraph.Elements<Run>().ElementAt(runIndex)
@@ -46,7 +47,7 @@ let getCsInfo (body : Body) paragraphIndex runIndex =
     let text = run.AppendChild(new Text())
     text
 
-
+// Function used to get or create footnote text
 let calNote (body : Body) (inputParams : string list) (param : string) : unit =
     let firstLot = inputParams.[0]
     let table = body.Elements<Table>().ElementAt(2)
@@ -68,7 +69,7 @@ let calNote (body : Body) (inputParams : string list) (param : string) : unit =
         let otherNote = "① Calculations are on " + firstLot + "."
         commentText.Text <- otherNote
 
-//Creates empty list - finds the Excel cell location for input and deconstructs the tuple into row and column numbers
+// Creates empty list - finds the Excel cell location for input and deconstructs the tuple into row and column numbers
 let zagListFunction (item : string) (sheetName : ExcelWorksheet) columnIndex =
     let list = List.init sheetName.Dimension.End.Row (fun i -> (i+1,1))
     let coordinates = List.find (fun (row,col) -> item.Equals ((string sheetName.Cells.[row,col].Value).Trim(), StringComparison.InvariantCultureIgnoreCase)) list
