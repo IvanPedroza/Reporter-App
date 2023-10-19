@@ -10,9 +10,10 @@ open System.Linq
 open ZagHelpers
 
 
-
+// Function used to fill out ZAG Batch Record
 let zagStart (inputParams : string list) (zagForm : string) (reporter : ExcelWorksheet)(myTools : ExcelWorksheet) =
 
+       // User interface
        Console.WriteLine "How many plates are you running?"
        let plateInput = Console.ReadLine() |> float
    
@@ -23,11 +24,10 @@ let zagStart (inputParams : string list) (zagForm : string) (reporter : ExcelWor
        Console.WriteLine ("Yes or No")
        let controlsInput = Console.ReadLine ()
    
-
+       // Reads in reagent lots from LIMS
        let reagentsList = List.init myTools.Dimension.End.Row (fun i -> (i+1,1)) 
        let coordinates = List.find (fun (row,col) -> reagentBox.Equals ((string myTools.Cells.[row,col].Value).Trim(), StringComparison.InvariantCultureIgnoreCase)) reagentsList
        let reagentsRow, column = coordinates
-   
        let gelVolume = ((plateInput - 1.0) * 10.0) + 43.0
    
 
@@ -62,7 +62,7 @@ let zagStart (inputParams : string list) (zagForm : string) (reporter : ExcelWor
  
        
 
-           //Reads in Word Doc, creates memory stream and starts processing
+           // Reads in Word Doc, creates memory stream and starts processing
            let docArray = File.ReadAllBytes(zagForm)
            use docCopy = new MemoryStream(docArray)
            use myDocument = WordprocessingDocument.Open (docCopy, true)
@@ -83,14 +83,14 @@ let zagStart (inputParams : string list) (zagForm : string) (reporter : ExcelWor
                        "1 - " + (roundUp - 1.0).ToString()
        
 
-           //CS lot identifier info and number of plates being run
+           // CS lot identifier info and number of plates being run
            (getCsInfo body 3 3).Text <- lot + " " + csname
            (getCsInfo body 3 9).Text <- lotPlates
            (getCsInfo body 3 14).Text <- roundUp |> string
            (getCsInfo body 5 8).Text <- geneNumber
            (getCsInfo body 5 14).Text <- scale
 
-           //finds cell of each reagent
+           // Finds cell of each reagent
            (getLotNumberCellText body 0 1 3 0).Text <- gelLot
            (getLotNumberCellText body 0 2 3 0).Text <- idLot 
            (getLotNumberCellText body 0 3 3 0).Text <- ibLot
@@ -123,7 +123,7 @@ let zagStart (inputParams : string list) (zagForm : string) (reporter : ExcelWor
                yellow.Text <- "N/A"
                upperStandard.Text <- "N/A"
 
-           //Calculations text and footnotes
+           // Calculations text and footnotes
            let gelCalculations = getCalculations body 2 5 1
            let gelFootNote = getCalculations body 2 7 0
            let dyeCalculations = getCalculations body 4 3 1
@@ -131,8 +131,7 @@ let zagStart (inputParams : string list) (zagForm : string) (reporter : ExcelWor
            let ccCalculations = getCalculations body 6 2 1 
            let ccFootNote = getCalculations body 6 4 0
 
-           //Adds footnote to calculations section and comment section
-       
+           // Adds footnote to calculations section and comment section
            if inputParams.Length > 1 then       
                if param = firstLot then
                    gelCalculations.Text <- gelVolume.ToString()
