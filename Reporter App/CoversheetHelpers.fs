@@ -8,7 +8,7 @@ open DocumentFormat.OpenXml.Wordprocessing
 open System.IO
 open System.Linq
     
-// assings form parameter to read cs formulation and populate cs type
+// Assings form parameter to read cs formulation and populate cs type
 let formulationToCodeSetType (formulation : string) : string =
     match formulation with
     | "XT" -> "RNA"
@@ -16,8 +16,8 @@ let formulationToCodeSetType (formulation : string) : string =
     | "STD" | "miRNA" -> "Panel/CodeSet Plus (RNA)"
     | _ -> failwith "Error ..."
 
-//defining a function with two parameters "csname" and "form"
-//function looks for starting characters of CS name to determine formulation type
+// Defining a function with two parameters "csname" and "form"
+// Function looks for starting characters of CS name to determine formulation type
 let determine (csname : string) (form : string) : string =
     match csname with 
         | csname when csname.StartsWith("CNV", StringComparison.CurrentCultureIgnoreCase)  -> "CNV (DNA)"
@@ -29,7 +29,7 @@ let determine (csname : string) (form : string) : string =
         | csname when csname.StartsWith("CHIP", StringComparison.CurrentCultureIgnoreCase)  -> "CHIP"
         | _ -> formulationToCodeSetType form
 
-
+// Function used to fill out CS ID info
 let fillTopCells (body : Body) paragraphIndex = 
     let paragraph = body.Elements<Paragraph>().ElementAt(paragraphIndex)
     let SdtRun = paragraph.Elements<SdtRun>().ElementAt(0)
@@ -41,6 +41,7 @@ let fillTopCells (body : Body) paragraphIndex =
     let text = run.Elements<Text>().ElementAt(0)
     text
 
+// Function used to deal with ducument static cells and format them for manipulation
 let staticCells (body : Body) tableIndex tableRowIndex tableCellIndex paragraphIndex = 
     let table = body.Elements<Table>().ElementAt(tableIndex)
     let row = table.Elements<TableRow>().ElementAt(tableRowIndex)
@@ -61,7 +62,7 @@ let staticCells (body : Body) tableIndex tableRowIndex tableCellIndex paragraphI
         let text = run.Elements<Text>().First()
         text
         
-
+// Funtion to get text from concentration fields
 let determiningConcentration (body : Body) tableIndex rowIndex = 
     let table = body.Elements<Table>().ElementAt(tableIndex)
     let tableRow = table.Elements<TableRow>().ElementAt(rowIndex)
@@ -75,7 +76,8 @@ let determiningConcentration (body : Body) tableIndex rowIndex =
     run.Elements<RunProperties>().Equals(fontSize) |> ignore
     let text = run.Elements<Text>().ElementAt(0)
     text
-
+    
+// Gets text from dropdown cell types
 let dropdownCells (body : Body) cellIndex = 
     let table = body.Elements<Table>().ElementAt(0)
     let tableRow = table.Elements<TableRow>().ElementAt(1)
